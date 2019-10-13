@@ -1,0 +1,36 @@
+#!/usr/bin/env fift -s
+"TonUtil.fif" include
+"Asm.fif" include
+
+{ ."usage: " @' $0 type ." <workchain-id> <n> <k> <pubkey-list-file> <private-key-file>" cr
+  ."Creates a new k of n multisig wallet in the specified workchain, with list of provided pubkeys. Message will be signed with private-key."
+  cr 1 halt
+} : usage
+$# 5 <> ' usage if
+
+$1 parse-workchain-id =: wc         // set workchain id from command line argument
+$2 parse-int dup =: initial-balance // initial balance provided by own
+8 fits ' usage ifnot
+$3 constant own-pubkey-file
+$4 constant party-pubkey-file
+$5 constant private-key-file
+
+own-pubkey-file file>B dup Blen 32 <> abort"Your public key must be exactly 32 bytes long" constant own-public-key
+party-pubkey-file file>B dup Blen 32 <> abort"Party public key must be exactly 32 bytes long" constant party-public-key
+private-key-file file>B dup Blen 32 <> abort"Private key must be exactly 32 bytes long" constant private-key
+
+"channel-code.fif" include
+
+<b 
+    own-public-key 256 B>u@ 256 u,    // pubkeyA
+    party-public-key 256 B>u@ 256 u,  // pubkeyB
+    0 4 u,                            // initialize state
+    0 32 u,                            // initial closing_time
+    0 64 u,                            // initial closing_height
+    0 16 u,                            // initialize state
+    0 16 u,                            // initialize state
+b> // init data
+
+null // no libraries
+
+<b b{0011} s, 3 roll ref, rot ref, swap dict, b> // create StateInit

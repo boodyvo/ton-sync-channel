@@ -1,0 +1,64 @@
+// automatically generated from `stdlib.fc` `channel.fc` 
+PROGRAM{
+  DECLPROC unilateral_close
+  DECLPROC cooperative_close
+  DECLPROC recv_external
+  DECLPROC revoke
+  77589 DECLMETHOD state
+  unilateral_close PROC:<{
+  }>
+  cooperative_close PROC:<{
+  }>
+  recv_external PROC:<{
+    9 PUSHPOW2
+    LDSLICEX
+    DUP
+    256 LDU
+    256 LDU
+    4 LDU
+    NIP
+    32 LDU
+    NIP
+    64 LDU
+    ENDS
+    s3 PUSH
+    HASHSU
+    s5 s3 PUSH2
+    CHKSIGNU
+    s0 s4 XCHG
+    HASHSU
+    s0 s5 s2 XC2PU
+    CHKSIGNU
+    s3 s(-1) PUXC
+    AND
+    35 THROWIFNOT
+    ACCEPT
+    s0 s2 XCHG
+    IF:<{
+      1 PUSHINT
+    }>ELSE<{
+      2 PUSHINT
+    }>
+    NOW
+    NEWC
+    s1 s3 XCHG
+    256 STU
+    s1 s3 XCHG
+    256 STU
+    s1 s2 XCHG
+    4 STU
+    32 STU
+    64 STU
+    ENDC
+    c4 POP
+  }>
+  revoke PROC:<{
+  }>
+  state PROC:<{
+    c4 PUSH
+    CTOS
+    9 PUSHPOW2
+    SDSKIPFIRST
+    4 PLDU
+  }>
+}END>c

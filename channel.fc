@@ -1,0 +1,51 @@
+;; smart contract decide to close channel after timeout or if one of parts posts incorrect transaction
+() unilateral_close() {
+}
+
+;; close the channel
+() cooperative_close() {
+}
+
+;; check incomming messages 
+() recv_external(slice in_msg) impure {
+    ;; check state
+     var signature = in_msg~load_bits(512);
+    var cs = in_msg;
+    var (pub_key_A, pub_key_B, state, closing_time, closing_height) = (cs~load_uint(256), cs~load_uint(256), cs~load_uint(4), cs~load_uint(32), cs~load_uint(64));
+    cs.end_parse();
+
+    var matchA = check_signature(slice_hash(in_msg), signature, pub_key_A);
+    var matchB = check_signature(slice_hash(in_msg), signature, pub_key_B);
+    throw_unless(35, matchA & matchB);
+    accept_message();
+    int state = 0;
+
+    if (matchA) {
+        state = 1;
+    } else {
+        state = 2;
+    }
+    closing_time = now();
+
+    set_data(begin_cell()
+        .store_uint(pub_key_A, 256)
+        .store_uint(pub_key_B, 256)
+        .store_uint(state, 4)
+        .store_uint(closing_time, 32)
+        .store_uint(closing_height, 64)
+        .end_cell());
+}
+
+;; unilateral_close with sending all money to the second 
+() revoke() {
+}
+
+;; Get methods
+
+;; returns last order id
+int state() method_id {
+    return get_data()
+        .begin_parse()
+        .skip_bits(256 + 256)
+        .preload_uint(4);
+}
