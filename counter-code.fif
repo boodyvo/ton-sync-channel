@@ -1,0 +1,38 @@
+// automatically generated from `stdlib.fc` `counter.fc` 
+PROGRAM{
+  DECLPROC recv_internal
+  DECLPROC recv_external
+  77589 DECLMETHOD state
+  recv_internal PROC:<{
+    DROP
+  }>
+  recv_external PROC:<{
+    9 PUSHPOW2
+    LDSLICEX
+    c4 PUSH
+    CTOS
+    256 LDU
+    64 LDU
+    ENDS
+    s0 s2 XCHG
+    HASHSU
+    s0 s3 s3 XC2PU
+    CHKSIGNU
+    35 THROWIFNOT
+    ACCEPT
+    INC
+    NEWC
+    s1 s2 XCHG
+    256 STU
+    64 STU
+    ENDC
+    c4 POP
+  }>
+  state PROC:<{
+    c4 PUSH
+    CTOS
+    8 PUSHPOW2
+    SDSKIPFIRST
+    64 PLDU
+  }>
+}END>c

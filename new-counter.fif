@@ -1,0 +1,47 @@
+#!/usr/bin/env fift -s
+"TonUtil.fif" include
+"Asm.fif" include
+
+{ ."usage: " @' $0 type ." <workchain-id> <n> <k> <pubkey-list-file> <private-key-file>" cr
+  ."Creates a new k of n multisig wallet in the specified workchain, with list of provided pubkeys. Message will be signed with private-key."
+  cr 1 halt
+} : usage
+$# 2 <> ' usage if
+
+$1 parse-workchain-id =: wc         // set workchain id from command line argument
+$2 constant private-key-file
+
+"own.pub" file>B constant own-public-key
+private-key-file file>B dup Blen 32 <> abort"Private key must be exactly 32 bytes long" constant private-key
+
+"counter-code.fif" include
+
+<b 
+    own-public-key 256 B>u@ 256 u,     // pubkeyA
+    0 64 u,                            // initialize counter
+b> // init data
+
+null // no libraries
+
+<b b{0011} s, 3 roll ref, rot ref, swap dict, b> // create StateInit
+
+cr ."---- State init ----" cr .s cr cr
+
+dup ."StateInit: " <s csr. cr
+dup hashu wc swap 2dup 2constant counter_addr
+."new counter address = " 2dup .addr cr
+2dup "counter.addr" save-address-verbose
+."Non-bounceable address (for init): " 2dup 7 .Addr cr
+."Bounceable address (for later access): " 6 .Addr cr
+
+<b b>
+dup hashu private-key ed25519_sign_uint rot
+
+// cr ."---- After signing signing message ----" cr .s cr cr
+
+<b b{1000100} s, counter_addr addr, 0 16 u, swap <s s, b{0} s, swap B, swap <s s, b>
+dup ."External message for initialization counter is " <s csr. cr
+2 boc+>B dup Bx. cr
+
+"counter-query.boc" tuck B>file
+."(Saved counter message query to file " type .")" cr

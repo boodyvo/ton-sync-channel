@@ -1,24 +1,16 @@
 // automatically generated from `stdlib.fc` `channel.fc` 
 PROGRAM{
   DECLPROC recv_internal
-  DECLPROC unilateral_close
-  DECLPROC cooperative_close
   DECLPROC recv_external
-  DECLPROC revoke
   77589 DECLMETHOD state
   85658 DECLMETHOD closing_time
   102013 DECLMETHOD closing_height
   recv_internal PROC:<{
     DROP
   }>
-  unilateral_close PROC:<{
-  }>
-  cooperative_close PROC:<{
-  }>
   recv_external PROC:<{
     9 PUSHPOW2
     LDSLICEX
-    NIP
     c4 PUSH
     CTOS
     256 LDU
@@ -29,27 +21,32 @@ PROGRAM{
     NIP
     64 LDU
     NIP
+    64 LDU
+    64 LDU
     ENDS
-    s0 s2 XCHG
-    ENDS
+    s0 s4 XCHG
+    HASHSU
+    s0 s5 s3 XC2PU
+    CHKSIGNU
+    35 THROWIFNOT
     ACCEPT
     444 PUSHINT
     123 PUSHINT
     0 PUSHINT
     NEWC
-    s1 s4 XCHG
+    s1 s5 XCHG
     256 STU
-    s1 s4 XCHG
+    s1 s3 XCHG
     256 STU
-    s1 s2 XCHG
+    s1 s3 XCHG
     4 STU
-    s1 s2 XCHG
     32 STU
+    64 STU
+    s1 s2 XCHG
+    64 STU
     64 STU
     ENDC
     c4 POP
-  }>
-  revoke PROC:<{
   }>
   state PROC:<{
     c4 PUSH
@@ -63,13 +60,13 @@ PROGRAM{
     CTOS
     516 PUSHINT
     SDSKIPFIRST
-    4 PLDU
+    32 PLDU
   }>
   closing_height PROC:<{
     c4 PUSH
     CTOS
     548 PUSHINT
     SDSKIPFIRST
-    4 PLDU
+    64 PLDU
   }>
 }END>c

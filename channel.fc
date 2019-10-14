@@ -2,40 +2,119 @@
   ;; do nothing for internal messages
 }
 
-;; smart contract decide to close channel after timeout or if one of parts posts incorrect transaction
-() unilateral_close() {
+() send_money() {
+        return;
 }
 
-;; close the channel
-() cooperative_close() {
+;; validating signatures for provided transaction and that balances are correct
+int validate_closing_msg(block_height, amount_a, amount_b, sign_a, sign_b, pub_key_A, pub_key_B, init_amount_a, init_amount_b) {
+        var cl = begin_cell()
+                .store_uint(block_height, 64)
+                .store_uint(amount_a, 64)
+                .store_uint(amount_b, 64)
+                .end_cell();
+        var a_ok = check_signature(cell_hash(cl), sign_a, pub_key_A);
+        var b_ok = check_signature(cell_hash(cl), sign_b, pub_key_B);
+        var balance_ok = (init_amount_a + init_amount_b - amount_a - amount_b) == 0;
+        ifnot (init_amount_a + init_amount_b - amount_a - amount_b == 0) {
+                return false;
+        }
+        return a_ok & b_ok;
 }
 
 ;; check incomming messages 
 () recv_external(slice in_msg) impure {
-    var signature = in_msg~load_bits(512);
-    var cs = in_msg;
-    var ds = get_data().begin_parse();
-    var (pub_key_A, pub_key_B, state, closing_time, closing_height) = (ds~load_uint(256), ds~load_uint(256), ds~load_uint(4), ds~load_uint(32), ds~load_uint(64));
-    ds.end_parse();
-    ;; TODO(boodyvo): parse cs
-    cs.end_parse();
+        var signature = in_msg~load_bits(512);
+        var ds = get_data().begin_parse();
+        var (pub_key_A, pub_key_B, state, closing_time, closing_height, closing_amount_a, closing_amount_b, init_amount_a, init_amount_b) = (ds~load_uint(256), ds~load_uint(256), ds~load_uint(4), ds~load_uint(32), ds~load_uint(64), ds~load_uint(64), ds~load_uint(64), ds~load_uint(64), ds~load_uint(64));
+        ds.end_parse();
 
-    ;; var matchA = check_signature(slice_hash(in_msg), signature, pub_key_A);
-    ;; var matchB = check_signature(slice_hash(in_msg), signature, pub_key_B);
-    ;; throw_unless(35, matchA & matchB);
-    accept_message();
+        ;; TODO(boodyvo): check in_msg so if should be of appropriate structure
+        ;; of there is an attack (but in this case an error will occure before) 
+        ;; when second party (let it be B) posts in_msg = (sign_A, height, amountA, amountB) - 
+        ;; it will pass validation for A but fails and in this case B will get all money
+        var matchA = check_signature(slice_hash(in_msg), signature, pub_key_A);
+        var matchB = check_signature(slice_hash(in_msg), signature, pub_key_B);
+        throw_unless(35, matchA & matchB);
+        accept_message();
+        var cs = in_msg;
+        var (block_height, amount_a, amount_b, ca_sign, cb_sign) = (cs~load_uint(256), cs~load_uint(64), cs~load_uint(32), cs~load_ref(), cs~load_dict());
+        cs.end_parse();
 
-    set_data(begin_cell()
-        .store_uint(pub_key_A, 256)
-        .store_uint(pub_key_B, 256)
-        .store_uint(0, 4)
-        .store_uint(123, 32)
-        .store_uint(444, 64)
-        .end_cell());
-}
+        ca_sign.begin_parse();
+        var (sign_a, wc_a, addr_a) = (ca_sign~load_uint(512), ca_sign~load_uint(8), ca_sign~load_uint(256));
+        ca_sign.end_parse();
 
-;; unilateral_close with sending all money to the second 
-() revoke() {
+        cb_sign.begin_parse();
+        var (sign_b, wc_b, addr_b) = (cb_sign~load_uint(512), cb_sign~load_uint(8), cb_sign~load_uint(256));
+        cb_sign.end_parse();
+
+        int valid_msg = validate_closing_msg(block_height, amount_a, amount_b, sign_a, sign_b, pub_key_A, pub_key_B);
+
+        if (matchA) {
+                if (state == 1) {
+                        ;; channel could be closed unilaterally
+                        if (closing_time > now()) {
+                                state = 3;
+                        }
+                }
+                if (state == 0) {
+                        if (valid_msg) {
+                                state = 1;
+                                closing_height = block_height;
+                                closing_time = now();
+                                closing_amount_a = amount_a;
+                                closing_amount_b = amount_b;
+                        } else {
+                                ;; if A posts incorrect message 
+                                state = 3;
+                                closing_amount_a = 0;
+                                closing_amount_b = amount_b;
+                        }
+                }
+                ;; there was a close msg from B
+                if (state == 2) {
+                        if (valid_msg) {
+                                
+                        } else {
+                                state = 3;
+                        }
+                }
+        }
+        if (matchB) {
+                if (state == 2) {
+                        ;; channel could be closed unilaterally
+                        if (closing_time > now()) {
+                                state = 3;
+                        }
+                }
+                if (state == 0) {
+                        if (valid_msg) {
+                                state = 2;
+                                closing_height = block_height;
+                                closing_time = now();
+                                closing_amount_a = amount_a;
+                                closing_amount_b = amount_b;
+                        } else {
+                                state = 3;
+                        }
+                        
+                }
+                ;; there was a close msg from A
+                if (state == 1) {
+                        state = 3;
+                }
+        }
+
+        set_data(begin_cell()
+                .store_uint(pub_key_A, 256)
+                .store_uint(pub_key_B, 256)
+                .store_uint(state, 4)
+                .store_uint(closing_time, 32)
+                .store_uint(closing_height, 64)
+                .store_uint(closing_amount_a, 64)
+                .store_uint(closing_amount_b, 64)
+                .end_cell());
 }
 
 ;; Get methods
@@ -53,7 +132,7 @@ int closing_time() method_id {
     return get_data()
         .begin_parse()
         .skip_bits(256 + 256 + 4)
-        .preload_uint(4);
+        .preload_uint(32);
 }
 
 ;; returns closing_height
@@ -61,5 +140,5 @@ int closing_height() method_id {
     return get_data()
         .begin_parse()
         .skip_bits(256 + 256 + 4 + 32)
-        .preload_uint(4);
+        .preload_uint(64);
 }

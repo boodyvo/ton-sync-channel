@@ -2,7 +2,7 @@
 "TonUtil.fif" include
 "Asm.fif" include
 
-{ ."usage: " @' $0 type ." <workchain-id> <n> <k> <pubkey-list-file> <private-key-file>" cr
+{ ."usage: " @' $0 type ." <workchain-id> <initial-balance> <own-pubkey-file> <party-pubkey-file> <private-key-file>" cr
   ."Creates a new k of n multisig wallet in the specified workchain, with list of provided pubkeys. Message will be signed with private-key."
   cr 1 halt
 } : usage
@@ -29,6 +29,8 @@ private-key-file file>B dup Blen 32 <> abort"Private key must be exactly 32 byte
     0 64 u,                            // initial closing_height
     0 64 u,                            // initialize closing_amount_a
     0 64 u,                            // initialize closing_amount_b
+    initial-balance 64 u,              // initial-balance for A
+    0 64 u,                            // 0 balance for B
 b> // init data
 
 null // no libraries
@@ -52,7 +54,7 @@ dup hashu wc swap 2dup 2constant channel_addr
 hashu private-key ed25519_sign_uint 
 swap
 
-// cr ."---- After signing ----" cr .s cr cr
+ cr ."---- After signing ----" cr .s cr cr
 
 <b 
     5 roll 64 u,
@@ -62,14 +64,17 @@ swap
     <b 2 roll B, b> ref,
 b>
 
-// cr ."---- After creating closing message ----" cr .s cr cr
+// 1 roll drop
+// 1 roll drop
+
+cr ."---- After creating closing message ----" cr .s cr cr
 
 // dup ."signing message: " <s csr. cr
 dup hashu private-key ed25519_sign_uint rot
 
-// cr ."---- After signing signing message ----" cr .s cr cr
+cr ."---- After signing signing message ----" cr .s cr cr
 
-<b b{1000100} s, channel_addr addr, b{000010} s, swap <s s, b{0} s, swap B, swap <s s, b>
+<b b{1000100} s, channel_addr addr, b{0000} s, swap <s s, b{0} s, swap B, swap <s s, b>
 dup ."External message for initialization is " <s csr. cr
 2 boc+>B dup Bx. cr
 

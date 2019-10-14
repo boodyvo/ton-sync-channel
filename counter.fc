@@ -1,0 +1,29 @@
+() recv_internal(slice in_msg) impure {
+  ;; do nothing for internal messages
+}
+
+;; check incomming messages 
+() recv_external(slice in_msg) impure {
+    var signature = in_msg~load_bits(512);
+    var ds = get_data().begin_parse();
+    var (pub_key_A, state) = (ds~load_uint(256), ds~load_uint(64));
+    ds.end_parse();
+
+    throw_unless(35, check_signature(slice_hash(in_msg), signature, pub_key_A));
+    accept_message();
+
+    set_data(begin_cell()
+        .store_uint(pub_key_A, 256)
+        .store_uint(state + 1, 64)
+        .end_cell());
+}
+
+;; Get methods
+
+;; returns state
+int state() method_id {
+    return get_data()
+        .begin_parse()
+        .skip_bits(256)
+        .preload_uint(64);
+}
