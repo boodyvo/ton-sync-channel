@@ -1,0 +1,15 @@
+"own-initial-state.boc" file>B B>boc
+<s 32 u@+ 64 u@+ 64 u@+ 64 B@
+// pick in the oposite order so we get in stack closing_balance_b closing_balance_a closing_height
+1 pick 3 pick 5 pick
+<b swap 32 u, swap 64 u, swap 64 u, b>
+hashu private-key ed25519_sign_uint 
+swap
+
+cr ."---- After signing ----" cr .s cr cr
+
+<b b>
+
+cr ."---- After creating closgin message ----" cr .s cr cr
+
+<b b>

@@ -14,8 +14,8 @@ To make some atomic swaps to top up channel for B from TON network need to suppo
     `state`          uint4, 
     `closingTime`    uint32 (lt of ut?), 
     `closingHeight`  uint64, 
-    `closingAmountA` Gram (uint16),
-    `closingAmountB` Gram (uint16),
+    `closingAmountA` Gram (uint64),
+    `closingAmountB` Gram (uint64),
 )
 
 `publicKeyA`, `publicKeyB` - public keys of 2 parties that are holding the channel;

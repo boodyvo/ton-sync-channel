@@ -1,3 +1,7 @@
+() recv_internal(slice in_msg) impure {
+  ;; do nothing for internal messages
+}
+
 ;; smart contract decide to close channel after timeout or if one of parts posts incorrect transaction
 () unilateral_close() {
 }
@@ -8,31 +12,25 @@
 
 ;; check incomming messages 
 () recv_external(slice in_msg) impure {
-    ;; check state
-     var signature = in_msg~load_bits(512);
+    var signature = in_msg~load_bits(512);
     var cs = in_msg;
-    var (pub_key_A, pub_key_B, state, closing_time, closing_height) = (cs~load_uint(256), cs~load_uint(256), cs~load_uint(4), cs~load_uint(32), cs~load_uint(64));
+    var ds = get_data().begin_parse();
+    var (pub_key_A, pub_key_B, state, closing_time, closing_height) = (ds~load_uint(256), ds~load_uint(256), ds~load_uint(4), ds~load_uint(32), ds~load_uint(64));
+    ds.end_parse();
+    ;; TODO(boodyvo): parse cs
     cs.end_parse();
 
-    var matchA = check_signature(slice_hash(in_msg), signature, pub_key_A);
-    var matchB = check_signature(slice_hash(in_msg), signature, pub_key_B);
-    throw_unless(35, matchA & matchB);
+    ;; var matchA = check_signature(slice_hash(in_msg), signature, pub_key_A);
+    ;; var matchB = check_signature(slice_hash(in_msg), signature, pub_key_B);
+    ;; throw_unless(35, matchA & matchB);
     accept_message();
-    int state = 0;
-
-    if (matchA) {
-        state = 1;
-    } else {
-        state = 2;
-    }
-    closing_time = now();
 
     set_data(begin_cell()
         .store_uint(pub_key_A, 256)
         .store_uint(pub_key_B, 256)
-        .store_uint(state, 4)
-        .store_uint(closing_time, 32)
-        .store_uint(closing_height, 64)
+        .store_uint(0, 4)
+        .store_uint(123, 32)
+        .store_uint(444, 64)
         .end_cell());
 }
 
@@ -42,10 +40,26 @@
 
 ;; Get methods
 
-;; returns last order id
+;; returns state
 int state() method_id {
     return get_data()
         .begin_parse()
         .skip_bits(256 + 256)
+        .preload_uint(4);
+}
+
+;; returns closing_time
+int closing_time() method_id {
+    return get_data()
+        .begin_parse()
+        .skip_bits(256 + 256 + 4)
+        .preload_uint(4);
+}
+
+;; returns closing_height
+int closing_height() method_id {
+    return get_data()
+        .begin_parse()
+        .skip_bits(256 + 256 + 4 + 32)
         .preload_uint(4);
 }

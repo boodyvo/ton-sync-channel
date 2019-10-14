@@ -1,0 +1,16 @@
+#!/usr/bin/env fift -s
+"TonUtil.fif" include
+
+$1 parse-int =: initial-balance
+
+"party.pk" file>B constant party-private-key
+
+
+<b 0 64 u, initial-balance 64 u, 0 64 u, b>
+
+dup ."signing message: " <s csr. cr
+dup hashu party-private-key ed25519_sign_uint swap
+
+<b swap <s s, swap B, b>
+
+2 boc+>B "own-initial-state.boc" tuck B>file

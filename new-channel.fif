@@ -22,15 +22,56 @@ private-key-file file>B dup Blen 32 <> abort"Private key must be exactly 32 byte
 "channel-code.fif" include
 
 <b 
-    own-public-key 256 B>u@ 256 u,    // pubkeyA
-    party-public-key 256 B>u@ 256 u,  // pubkeyB
-    0 4 u,                            // initialize state
+    own-public-key 256 B>u@ 256 u,     // pubkeyA
+    party-public-key 256 B>u@ 256 u,   // pubkeyB
+    0 4 u,                             // initialize state
     0 32 u,                            // initial closing_time
     0 64 u,                            // initial closing_height
-    0 16 u,                            // initialize state
-    0 16 u,                            // initialize state
+    0 64 u,                            // initialize closing_amount_a
+    0 64 u,                            // initialize closing_amount_b
 b> // init data
 
 null // no libraries
 
 <b b{0011} s, 3 roll ref, rot ref, swap dict, b> // create StateInit
+
+cr ."---- State init ----" cr .s cr cr
+
+dup ."StateInit: " <s csr. cr
+dup hashu wc swap 2dup 2constant channel_addr
+."new channel address = " 2dup .addr cr
+2dup "channel.addr" save-address-verbose
+."Non-bounceable address (for init): " 2dup 7 .Addr cr
+."Bounceable address (for later access): " 6 .Addr cr
+
+"own-initial-state.boc" file>B B>boc
+<s 64 u@+ 64 u@+ 64 u@+ 64 B@
+// pick in the oposite order so we get in stack closing_balance_b closing_balance_a closing_height
+1 pick 3 pick 5 pick
+<b swap 64 u, swap 64 u, swap 64 u, b>
+hashu private-key ed25519_sign_uint 
+swap
+
+// cr ."---- After signing ----" cr .s cr cr
+
+<b 
+    5 roll 64 u,
+    4 roll 64 u, 
+    3 roll 64 u, 
+    <b 3 roll B, b> ref,
+    <b 2 roll B, b> ref,
+b>
+
+// cr ."---- After creating closing message ----" cr .s cr cr
+
+// dup ."signing message: " <s csr. cr
+dup hashu private-key ed25519_sign_uint rot
+
+// cr ."---- After signing signing message ----" cr .s cr cr
+
+<b b{1000100} s, channel_addr addr, b{000010} s, swap <s s, b{0} s, swap B, swap <s s, b>
+dup ."External message for initialization is " <s csr. cr
+2 boc+>B dup Bx. cr
+
+"close-channel-query.boc" tuck B>file
+."(Saved close message queryto file " type .")" cr
