@@ -13,4 +13,4 @@ dup hashu party-private-key ed25519_sign_uint swap
 
 <b swap <s s, swap B, b>
 
-2 boc+>B "own-initial-state.boc" tuck B>file
+2 boc+>B "last-confirmed-state-a.boc" tuck B>file

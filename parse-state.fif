@@ -1,0 +1,27 @@
+#!/usr/bin/env fift -s
+"TonUtil.fif" include
+"Asm.fif" include
+
+"last-confirmed-state-a.boc" file>B B>boc
+<s
+64 u@+ swap =: a-last-height
+64 u@+ swap =: a-last-amount-a
+64 u@+ swap =: a-last-amount-b
+64 B@ =: a-last-signature-a
+
+a-last-height a-last-amount-a a-last-amount-b a-last-signature-a
+
+cr ."---- a state ----" cr .s cr cr
+
+drop drop drop drop
+
+"last-confirmed-state-b.boc" file>B B>boc
+<s
+64 u@+ swap =: b-last-height
+64 u@+ swap =: b-last-amount-a
+64 u@+ swap =: b-last-amount-b
+64 B@ =: b-last-signature-a
+
+b-last-height b-last-amount-a b-last-amount-b b-last-signature-a
+
+cr ."---- b state ----" cr .s cr cr

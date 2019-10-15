@@ -5,7 +5,6 @@ $1 parse-int =: initial-balance
 
 "own.pk" file>B constant own-private-key
 
-
 <b 0 64 u, initial-balance 64 u, 0 64 u, b>
 
 dup ."signing message: " <s csr. cr
@@ -13,4 +12,4 @@ dup hashu own-private-key ed25519_sign_uint swap
 
 <b swap <s s, swap B, b>
 
-2 boc+>B "party-initial-state.boc" tuck B>file
+2 boc+>B "last-confirmed-state-b.boc" tuck B>file

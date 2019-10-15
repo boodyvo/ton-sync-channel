@@ -1,0 +1,67 @@
+#!/usr/bin/env fift -s
+"TonUtil.fif" include
+"Asm.fif" include
+
+{ ."usage: " @' $0 type ." <private-key-file> <public-key-a-file> <own-transaction? (-1 - own transaction, 0 - was proposed by party)>" cr
+  ."Creates outgoint offchain transaction."
+  cr 1 halt
+} : usage
+$# 3 <> ' usage if
+
+$1 constant private-key-file
+$2 constant public-key-a-file
+$3 parse-int dup =: own-transaction // initial balance provided by own
+1 fits ' usage ifnot
+
+private-key-file file>B dup Blen 32 <> abort"Private key must be exactly 32 bytes long" constant private-key
+public-key-a-file file>B dup Blen 32 <> abort"Private key must be exactly 32 bytes long" constant public-key-a
+
+// read last state
+
+"last-confirmed-state-b.boc" file>B B>boc
+<s
+64 u@+ swap =: last-height
+64 u@+ swap =: last-amount-a
+64 u@+ swap =: last-amount-b
+64 B@ =: last-signature-a
+
+"last-state-candidate-b.boc" file>B B>boc
+<s 
+64 u@+ swap =: candidate-height
+64 u@+ swap =: candidate-amount-a
+64 u@+ swap =: candidate-amount-b
+64 B@ =: candidate-signature-a
+
+// validate that sum of money is the same
+last-amount-a last-amount-b + candidate-amount-a candidate-amount-b + - 0= { ."amount should exact the same as before." cr 1 halt } ifnot
+
+// if transaction is not own validate that a sending money (not receiving)
+own-transaction { last-amount-a candidate-amount-a > { ."amount-a should be less than before." cr 1 halt } ifnot } ifnot
+
+// check height increased exactly by 1
+candidate-height last-height - 1- 0= { ."incorrect height." cr 1 halt } ifnot
+
+<b candidate-height 64 u, candidate-amount-a 64 u, candidate-amount-b 64 u, b>
+hashu 256 u>B
+candidate-signature-a
+public-key-a
+ed25519_chksign { ."signature is mismatch." cr 1 halt } ifnot
+
+// message is ok so we can rewrite 
+
+candidate-signature-a
+<b candidate-height 64 u, candidate-amount-a 64 u, candidate-amount-b 64 u, b>
+
+<b swap <s s, swap B, b>
+2 boc+>B "last-confirmed-state-b.boc" tuck B>file
+
+// sign for A
+
+<b candidate-height 64 u, candidate-amount-a 64 u, candidate-amount-b 64 u, b>
+
+dup ."signing message: " <s csr. cr
+dup hashu private-key ed25519_sign_uint swap
+
+<b swap <s s, swap B, b>
+
+2 boc+>B "last-state-candidate-a.boc" tuck B>file

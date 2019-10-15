@@ -1,0 +1,44 @@
+#!/usr/bin/env fift -s
+"TonUtil.fif" include
+"Asm.fif" include
+
+{ ."usage: " @' $0 type ." <workchain-id> <initial-balance> <private-key-file>" cr
+  ."Creates a new k of n multisig wallet in the specified workchain, with list of provided pubkeys. Message will be signed with private-key."
+  cr 1 halt
+} : usage
+$# 4 <> ' usage if
+
+$1 parse-workchain-id =: wc         // set workchain id from command line argument
+$2 parse-int dup =: initial-balance // initial balance provided by own
+64 fits ' usage ifnot
+$3 parse-int dup =: amount-a  // amount that user wants to send
+64 fits ' usage ifnot
+$4 constant private-key-file
+
+private-key-file file>B dup Blen 32 <> abort"Private key must be exactly 32 bytes long" constant private-key
+
+// read last state
+
+"last-confirmed-state-a.boc" file>B B>boc
+<s 
+64 u@+ swap =: last-height
+64 u@+ swap =: last-amount-a
+64 u@+ swap =: last-amount-b
+64 B@ =: last-signature-b
+
+// validate that user have enough money to send
+
+last-amount-a amount-a >= { ."amount should be not greater than " last-amount-a . ."nanograms." cr 1 halt } ifnot
+
+last-height 1+ =: new-height
+last-amount-a amount-a - =: new-amount-a
+last-amount-b amount-a + =: new-amount-b
+
+<b new-height 64 u, new-amount-a 64 u, new-amount-b 64 u, b>
+
+dup ."signing message: " <s csr. cr
+dup hashu private-key ed25519_sign_uint swap
+
+<b swap <s s, swap B, b>
+
+2 boc+>B "last-state-candidate-b.boc" tuck B>file

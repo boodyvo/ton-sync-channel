@@ -3,7 +3,7 @@
 "Asm.fif" include
 
 { ."usage: " @' $0 type ." <workchain-id> <initial-balance> <own-pubkey-file> <party-pubkey-file> <private-key-file>" cr
-  ."Creates a new k of n multisig wallet in the specified workchain, with list of provided pubkeys. Message will be signed with private-key."
+  ."Creates new p2p channel smart-contract in the specified workchain. Message will be signed with private-key."
   cr 1 halt
 } : usage
 $# 5 <> ' usage if
@@ -46,7 +46,7 @@ dup hashu wc swap 2dup 2constant channel_addr
 ."Non-bounceable address (for init): " 2dup 7 .Addr cr
 ."Bounceable address (for later access): " 6 .Addr cr
 
-"own-initial-state.boc" file>B B>boc
+"last-confirmed-state-a.boc" file>B B>boc
 <s 64 u@+ 64 u@+ 64 u@+ 64 B@
 // pick in the oposite order so we get in stack closing_balance_b closing_balance_a closing_height
 1 pick 3 pick 5 pick
@@ -67,12 +67,12 @@ b>
 // 1 roll drop
 // 1 roll drop
 
-cr ."---- After creating closing message ----" cr .s cr cr
+// cr ."---- After creating closing message ----" cr .s cr cr
 
 // dup ."signing message: " <s csr. cr
 dup hashu private-key ed25519_sign_uint rot
 
-cr ."---- After signing signing message ----" cr .s cr cr
+// cr ."---- After signing signing message ----" cr .s cr cr
 
 <b b{1000100} s, channel_addr addr, b{0000} s, swap <s s, b{0} s, swap B, swap <s s, b>
 dup ."External message for initialization is " <s csr. cr
