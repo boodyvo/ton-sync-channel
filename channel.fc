@@ -2,12 +2,8 @@
   ;; do nothing for internal messages
 }
 
-() send_money() {
-        return;
-}
-
 ;; validating signatures for provided transaction and that balances are correct
-int validate_closing_msg(block_height, amount_a, amount_b, sign_a, sign_b, pub_key_A, pub_key_B, init_amount_a, init_amount_b) {
+int validate_closing_msg(block_height, amount_a, amount_b, sign_a, sign_b, pub_key_A, pub_key_B) {
         var cl = begin_cell()
                 .store_uint(block_height, 64)
                 .store_uint(amount_a, 64)
@@ -15,10 +11,7 @@ int validate_closing_msg(block_height, amount_a, amount_b, sign_a, sign_b, pub_k
                 .end_cell();
         var a_ok = check_signature(cell_hash(cl), sign_a, pub_key_A);
         var b_ok = check_signature(cell_hash(cl), sign_b, pub_key_B);
-        var balance_ok = (init_amount_a + init_amount_b - amount_a - amount_b) == 0;
-        ifnot (init_amount_a + init_amount_b - amount_a - amount_b == 0) {
-                return false;
-        }
+        
         return a_ok & b_ok;
 }
 
@@ -33,21 +26,23 @@ int validate_closing_msg(block_height, amount_a, amount_b, sign_a, sign_b, pub_k
         ;; of there is an attack (but in this case an error will occure before) 
         ;; when second party (let it be B) posts in_msg = (sign_A, height, amountA, amountB) - 
         ;; it will pass validation for A but fails and in this case B will get all money
+        
         var matchA = check_signature(slice_hash(in_msg), signature, pub_key_A);
         var matchB = check_signature(slice_hash(in_msg), signature, pub_key_B);
         throw_unless(35, matchA & matchB);
         accept_message();
+        
         var cs = in_msg;
-        var (block_height, amount_a, amount_b, ca_sign, cb_sign) = (cs~load_uint(256), cs~load_uint(64), cs~load_uint(32), cs~load_ref(), cs~load_dict());
-        cs.end_parse();
+        var (block_height, amount_a, amount_b) = (cs~load_uint(64), cs~load_uint(64), cs~load_uint(64));
 
-        ca_sign.begin_parse();
-        var (sign_a, wc_a, addr_a) = (ca_sign~load_uint(512), ca_sign~load_uint(8), ca_sign~load_uint(256));
-        ca_sign.end_parse();
+        var ca_sign = cs~load_ref().begin_parse();
+        var sign_a = ca_sign~load_bits(512);
+        ca_sign.end_parse(); 
 
-        cb_sign.begin_parse();
-        var (sign_b, wc_b, addr_b) = (cb_sign~load_uint(512), cb_sign~load_uint(8), cb_sign~load_uint(256));
+        var cb_sign = cs~load_ref().begin_parse();
+        var sign_b = cb_sign~load_bits(512);
         cb_sign.end_parse();
+        cs.end_parse();
 
         int valid_msg = validate_closing_msg(block_height, amount_a, amount_b, sign_a, sign_b, pub_key_A, pub_key_B);
 

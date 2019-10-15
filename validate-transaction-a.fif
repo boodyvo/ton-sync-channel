@@ -65,3 +65,5 @@ dup hashu private-key ed25519_sign_uint swap
 <b swap <s s, swap B, b>
 
 2 boc+>B "last-state-candidate-b.boc" tuck B>file
+
+."ok" cr

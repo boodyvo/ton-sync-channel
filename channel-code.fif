@@ -1,12 +1,32 @@
 // automatically generated from `stdlib.fc` `channel.fc` 
 PROGRAM{
   DECLPROC recv_internal
+  DECLPROC validate_closing_msg
   DECLPROC recv_external
   77589 DECLMETHOD state
   85658 DECLMETHOD closing_time
   102013 DECLMETHOD closing_height
   recv_internal PROC:<{
     DROP
+  }>
+  validate_closing_msg PROC:<{
+    NEWC
+    s1 s7 XCHG
+    64 STU
+    s1 s5 XCHG
+    64 STU
+    s1 s3 XCHG
+    64 STU
+    ENDC
+    DUP
+    HASHCU
+    s0 s0 s4 XCHG3
+    CHKSIGNU
+    s0 s2 XCHG
+    HASHCU
+    s0 s1 s3 XCHG3
+    CHKSIGNU
+    AND
   }>
   recv_external PROC:<{
     9 PUSHPOW2
@@ -16,23 +36,168 @@ PROGRAM{
     256 LDU
     256 LDU
     4 LDU
-    NIP
     32 LDU
-    NIP
+    64 LDU
+    64 LDU
+    64 LDU
     64 LDU
     NIP
     64 LDU
-    64 LDU
+    NIP
     ENDS
-    s0 s4 XCHG
+    s7 PUSH
     HASHSU
-    s0 s5 s3 XC2PU
+    s9 s7 PUSH2
     CHKSIGNU
+    s8 PUSH
+    HASHSU
+    s0 s10 s7 XC2PU
+    CHKSIGNU
+    s9 s0 PUSH2
+    AND
     35 THROWIFNOT
     ACCEPT
-    444 PUSHINT
-    123 PUSHINT
-    0 PUSHINT
+    s0 s8 XCHG
+    64 LDU
+    64 LDU
+    64 LDU
+    LDREF
+    SWAP
+    CTOS
+    9 PUSHPOW2
+    LDSLICEX
+    ENDS
+    SWAP
+    LDREF
+    SWAP
+    CTOS
+    9 PUSHPOW2
+    LDSLICEX
+    ENDS
+    SWAP
+    ENDS
+    s4 s(-1) s0 PUXC2
+    s4 s(-1) s0 PUXC2
+    s4 s(-1) s(-1) PUXC2
+    s14 s13 PUSH2
+    validate_closing_msg CALLDICT
+    s0 s12 XCHG
+    IF:<{
+      s7 PUSH
+      1 EQINT
+      IF:<{
+        s6 PUSH
+        NOW
+        GREATER
+        IF:<{
+          s7 POP
+          3 PUSHINT
+        }>ELSE<{
+          s0 s7 XCHG
+        }>
+      }>ELSE<{
+        s0 s7 XCHG
+      }>
+      DUP
+      0 EQINT
+      IF:<{
+        DROP
+        s2 POP
+        s2 POP
+        s8 PUSH
+        IF:<{
+          s2 POP
+          s2 POP
+          1 PUSHINT
+          s2 PUSH
+          NOW
+          s3 s5 PUSH2
+        }>ELSE<{
+          3 PUSHINT
+          0 PUSHINT
+          s6 PUSH
+          s4 s6 XCHG
+          s3 s5 XCHG
+          s2 s4 XCHG
+        }>
+      }>ELSE<{
+        s6 s5 s4 XCHG3
+        s0 s3 XCHG2
+      }>
+      s4 PUSH
+      2 EQINT
+      IF:<{
+        s11 PUSH
+        IFNOT:<{
+          s4 POP
+          3 PUSHINT
+        }>ELSE<{
+          s0 s4 XCHG
+        }>
+      }>ELSE<{
+        s0 s4 XCHG
+      }>
+    }>ELSE<{
+      s6 s5 s7 XCHG3
+      s3 s4 XCHG
+      s1 s3 XCHG
+    }>
+    s0 s10 XCHG
+    IF:<{
+      s9 PUSH
+      2 EQINT
+      IF:<{
+        OVER
+        NOW
+        GREATER
+        IF:<{
+          s9 POP
+          3 PUSHINT
+        }>ELSE<{
+          s0 s9 XCHG
+        }>
+      }>ELSE<{
+        s0 s9 XCHG
+      }>
+      DUP
+      0 EQINT
+      IF:<{
+        DROP
+        s0 s9 XCHG
+        IF:<{
+          2DROP
+          s5 POP
+          s5 POP
+          2 PUSHINT
+          NOW
+        }>ELSE<{
+          s2 POP
+          s2 POP
+          s2 POP
+          s0 s5 XCHG2
+          3 PUSHINT
+          SWAP
+        }>
+      }>ELSE<{
+        s2 s10 XCHG
+        s3 s6 XCHG
+        s4 s5 XCHG2
+        4 BLKDROP
+      }>
+      OVER
+      1 EQINT
+      IF:<{
+        NIP
+        3 PUSHINT
+      }>ELSE<{
+        SWAP
+      }>
+    }>ELSE<{
+      s10 s1 s9 XCHG3
+      s3 s6 XCHG
+      s5 s4 XCHG2
+      4 BLKDROP
+    }>
     NEWC
     s1 s5 XCHG
     256 STU
@@ -41,8 +206,8 @@ PROGRAM{
     s1 s3 XCHG
     4 STU
     32 STU
+    s1 s3 XCHG
     64 STU
-    s1 s2 XCHG
     64 STU
     64 STU
     ENDC

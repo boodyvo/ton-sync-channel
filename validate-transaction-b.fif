@@ -59,9 +59,10 @@ candidate-signature-a
 
 <b candidate-height 64 u, candidate-amount-a 64 u, candidate-amount-b 64 u, b>
 
-dup ."signing message: " <s csr. cr
 dup hashu private-key ed25519_sign_uint swap
 
 <b swap <s s, swap B, b>
 
 2 boc+>B "last-state-candidate-a.boc" tuck B>file
+
+."ok" cr

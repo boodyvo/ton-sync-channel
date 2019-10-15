@@ -8,7 +8,7 @@
 } : usage
 $# 2 <> ' usage if
 
-$1 parse-int dup =: amount-a  // amount that user wants to send
+$1 parse-int dup =: amount-b  // amount that user wants to send
 64 fits ' usage ifnot
 $2 constant private-key-file
 
@@ -16,7 +16,7 @@ private-key-file file>B dup Blen 32 <> abort"Private key must be exactly 32 byte
 
 // read last state
 
-"last-confirmed-state-a.boc" file>B B>boc
+"last-confirmed-state-b.boc" file>B B>boc
 <s 
 64 u@+ swap =: last-height
 64 u@+ swap =: last-amount-a
@@ -25,11 +25,11 @@ private-key-file file>B dup Blen 32 <> abort"Private key must be exactly 32 byte
 
 // validate that user have enough money to send
 
-last-amount-a amount-a >= { ."amount should be not greater than " last-amount-a . ."nanograms." cr 1 halt } ifnot
+last-amount-b amount-b >= { ."amount should be not greater than " last-amount-b . ."nanograms." cr 1 halt } ifnot
 
 last-height 1+ =: new-height
-last-amount-a amount-a - =: new-amount-a
-last-amount-b amount-a + =: new-amount-b
+last-amount-a amount-b + =: new-amount-a
+last-amount-b amount-b - =: new-amount-b
 
 <b new-height 64 u, new-amount-a 64 u, new-amount-b 64 u, b>
 
@@ -37,6 +37,6 @@ dup hashu private-key ed25519_sign_uint swap
 
 <b swap <s s, swap B, b>
 
-2 boc+>B "last-state-candidate-b.boc" tuck B>file
+2 boc+>B "last-state-candidate-a.boc" tuck B>file
 
 ."ok" cr
